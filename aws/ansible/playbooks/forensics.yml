@@ -1,0 +1,28 @@
+---
+- name: Run Forensic Data Collection on Quarantined Host
+  hosts: Wazuh-Target
+  become: yes
+  tasks:
+    - name: Check for unauthorized root logins
+      ansible.builtin.shell: "grep 'sshd:session:opened' /var/log/auth.log | grep root"
+      register: root_login_check
+      ignore_errors: yes
+
+    - name: Capture active network connections (Netstat)
+      ansible.builtin.shell: "ss -tunap | cat"
+      register: netstat_output
+      ignore_errors: yes
+
+    - name: Capture running processes
+      ansible.builtin.shell: "ps aux"
+      register: process_list
+      ignore_errors: yes
+
+    - name: Print Forensic Summary
+      ansible.builtin.debug:
+        msg: |
+          --- FORENSIC SUMMARY ---
+          Host: {{ ansible_hostname }}
+          Root Login Check: {{ root_login_check.stdout }}
+          Active Connections: {{ netstat_output.stdout }}
+          Process List: {{ process_list.stdout }}
