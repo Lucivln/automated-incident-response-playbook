@@ -1,0 +1,35 @@
+---
+- name: Set up Wazuh Agent
+  hosts: Wazuh-Target
+  become: yes
+  vars:
+    wazuh_manager_ip: # To be provided at runtime
+  tasks:
+    - name: Add Wazuh repository key
+      ansible.builtin.apt_key:
+        url: https://packages.wazuh.com/key/GPG-KEY-WAZUH
+        state: present
+
+    - name: Add Wazuh repository
+      ansible.builtin.apt_repository:
+        repo: "deb https://packages.wazuh.com/4.x/apt/ stable main"
+        state: present
+
+    - name: Install Wazuh Agent
+      ansible.builtin.apt:
+        name: wazuh-agent
+        state: present
+        update_cache: yes
+
+    - name: Configure Wazuh agent to connect to manager
+      ansible.builtin.lineinfile:
+        path: /var/ossec/etc/ossec.conf
+        regexp: '<address>WAZUH_MANAGER_IP</address>'
+        line: '<address>{{ wazuh_manager_ip }}</address>'
+        backrefs: yes
+
+    - name: Enable and start Wazuh Agent service
+      ansible.builtin.service:
+        name: wazuh-agent
+        enabled: yes
+        state: started
