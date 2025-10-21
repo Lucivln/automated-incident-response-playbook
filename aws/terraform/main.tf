@@ -1,39 +1,41 @@
 # aws/terraform/main.tf
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
 
+# 1. AWS Provider Configuration (Implicitly used from versions.tf)
 provider "aws" {
   region = "eu-north-1"
 }
 
-resource "aws_key_pair" "ssh_key" {
-  key_name   = "project-key"
-  public_key = file("/root/.ssh/id_rsa.pub")
+# 2. VPC Data Source (To get default Security Group ID for instances)
+data "aws_vpc" "default" {
+  default = true
 }
 
-# Provision the EC2 instance for the security incident target
-resource "aws_instance" "target_host" {
-  ami           = "ami-0a716d3f3b16d290c" # Ubuntu 20.04 AMI, verify for your region
+# 3. Provision SSH Key Pair
+resource "aws_key_pair" "ssh_key" {
+  key_name   = "project-key"
+  public_key = file("/root/.ssh/id_rsa.pub") # Use absolute path
+}
+
+# 4. Provision the Wazuh Server EC2 Instance
+resource "aws_instance" "wazuh_server" {
+  ami           = "ami-0b0d611b854e4f738" # REPLACE with your actual EU-NORTH-1 AMI
   instance_type = "t3.micro"
   key_name      = aws_key_pair.ssh_key.key_name
+  # Explicitly assign default SG to avoid conflict with containment.tf
   vpc_security_group_ids = [data.aws_vpc.default.default_security_group_id]
   tags = {
-    Name = "Wazuh-Target"
+    Name = "Wazuh-Server"
   }
 }
 
-# Provision the EC2 instance to host the Wazuh server
-resource "aws_instance" "wazuh_server" {
-  ami           = "ami-0a716d3f3b16d290c" # Ubuntu 20.04 AMI, verify for your region
-  instance_type = "t3.micro" # Recommended t2.medium for Wazuh
+# 5. Provision the Wazuh Target EC2 Instance
+resource "aws_instance" "target_host" {
+  ami           = "ami-0b0d611b854e4f738" # REPLACE with your actual EU-NORTH-1 AMI
+  instance_type = "t3.micro"
   key_name      = aws_key_pair.ssh_key.key_name
+  # Explicitly assign default SG to avoid conflict with containment.tf
+  vpc_security_group_ids = [data.aws_vpc.default.default_security_group_id]
   tags = {
-    Name = "Wazuh-Server"
+    Name = "Wazuh-Target"
   }
 }
