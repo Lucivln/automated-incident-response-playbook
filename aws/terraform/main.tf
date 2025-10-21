@@ -22,6 +22,7 @@ resource "aws_instance" "target_host" {
   ami           = "ami-0a716d3f3b16d290c" # Ubuntu 20.04 AMI, verify for your region
   instance_type = "t3.micro"
   key_name      = aws_key_pair.ssh_key.key_name
+  vpc_security_group_ids = [data.aws_vpc.default.default_security_group_id]
   tags = {
     Name = "Wazuh-Target"
   }
