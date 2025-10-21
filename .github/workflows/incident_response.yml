@@ -39,10 +39,8 @@ jobs:
 
       - name: Apply Quarantine Security Group
         id: apply_quarantine
-        # This command applies the containment.tf logic.
-        # It creates the attachment resource, replacing the old Security Group with the Quarantine SG.
         run: |
-          echo "Applying containment to ${{ github.event.inputs.target_host }}"
+          echo "Applying containment via direct ID reference."
           terraform apply -auto-approve
         working-directory: ./aws/terraform
 
