@@ -1,6 +1,8 @@
+# aws/ansible/playbooks/wazuh_agent.yml - UNCHANGED (Correct)
+
 ---
 - name: Set up Wazuh Agent
-  hosts: Wazuh-Target
+  hosts: tag__Wazuh_Target
   become: yes
   vars:
     wazuh_manager_ip: # To be provided at runtime

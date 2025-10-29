@@ -1,37 +1,81 @@
+# aws/ansible/playbooks/wazuh_server.yml - FINAL DOCKER SETUP
+
 ---
-- name: Set up Wazuh Server
-  hosts: Wazuh-Server
+- name: Set up Wazuh Server (Manager and Elastic Stack via Docker)
+  hosts: tag__Wazuh_Server # Ensure the corrected host name is used
   become: yes
-  vars:
-    wazuh_version: 4.5.1
+
+  # aws/ansible/playbooks/wazuh_server.yml - Corrected Tasks Section
+
   tasks:
-    - name: Install dependencies
+    - name: Ensure python3-apt is installed via raw (CRITICAL FIX)
+      # Use raw module for initial dependency installation
+      ansible.builtin.raw: |
+        apt update && apt install -y python3-apt apt-transport-https
+
+    - name: Update apt cache and install basic packages
       ansible.builtin.apt:
-        name:
-          - apt-transport-https
+        update_cache: yes
+        name: 
           - curl
           - gnupg2
-          - openjdk-11-jdk
+        state: present
+        
+    - name: Add Docker GPG key and repository
+      ansible.builtin.apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
+        state: present
+        filename: docker
+
+    - name: Install Docker and required packages
+      ansible.builtin.apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          - docker-compose-plugin
+        state: latest
+        update_cache: yes
+
+    - name: Ensure apt-transport-https is installed (Dependency)
+      ansible.builtin.apt:
+        name: apt-transport-https
         state: present
         update_cache: yes
 
-    - name: Add Wazuh repository key
-      ansible.builtin.apt_key:
-        url: https://packages.wazuh.com/key/GPG-KEY-WAZUH
-        state: present
-
-    - name: Add Wazuh repository
+    - name: Add Docker GPG key and repository
       ansible.builtin.apt_repository:
-        repo: "deb https://packages.wazuh.com/4.x/apt/ stable main"
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu focal stable
         state: present
-
-    - name: Install Wazuh Manager
+        filename: docker
+      
+    - name: Install Docker and required packages
       ansible.builtin.apt:
-        name: wazuh-manager
-        state: present
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+          # Docker Compose V2 is typically bundled with Docker or installed as a plugin
+          - docker-compose-plugin 
+        state: latest
+        update_cache: yes
 
-    - name: Enable and start Wazuh Manager service
-      ansible.builtin.service:
-        name: wazuh-manager
-        enabled: yes
-        state: started
+    - name: Create docker-compose directory for Wazuh files
+      ansible.builtin.file:
+        path: /opt/wazuh-docker
+        state: directory
+        mode: '0755'
+
+    - name: Download official Wazuh Docker Compose file
+      ansible.builtin.get_url:
+        # Using a stable, widely compatible release version for the compose file
+        url: https://raw.githubusercontent.com/wazuh/wazuh-docker/4.7/docker-compose.yml 
+        dest: /opt/wazuh-docker/docker-compose.yml
+        mode: '0644'
+
+    - name: Deploy Wazuh Stack using Docker Compose V2
+      # CRITICAL FIX: Changed module name to use the v2 compatible version
+      community.docker.docker_compose_v2: 
+        project_src: /opt/wazuh-docker
+        state: present
+      # NOTE: This will take several minutes to download images and start services

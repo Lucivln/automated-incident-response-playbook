@@ -1,8 +1,14 @@
-plugin: aws_ec2
+plugin: amazon.aws.aws_ec2
 regions:
   - eu-north-1
+filters:
+  instance-state-name: running
 hostnames:
-  - tag:Name
+  - public-dns-name
 keyed_groups:
   - key: tags.Name
     prefix: tag_
+compose:
+  ansible_host: public_ip_address
+
+

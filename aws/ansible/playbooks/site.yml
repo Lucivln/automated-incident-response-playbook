@@ -1,0 +1,17 @@
+# aws/ansible/playbooks/site.yml - NEW FILE (Master Orchestration)
+
+---
+- name: 1. Deploy Wazuh Manager and Elastic Stack
+  import_playbook: wazuh_server.yml
+
+- name: 2. Deploy Wazuh Agent on Target Host
+  import_playbook: wazuh_agent.yml
+
+- name: 3. Ensure Manager/Agent Connectivity (Optional, if needed)
+  hosts: tag__Wazuh_Server
+  become: yes
+  tasks:
+    # This is a placeholder for any final steps, like registering the agent
+    # or deploying the automated response script (e.g., firewall modification script)
+    - name: Install Python required for Ansible provisioning (if not using Raw module)
+      ansible.builtin.raw: apt update && apt install -y python3
